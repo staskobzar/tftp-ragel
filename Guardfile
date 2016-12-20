@@ -12,6 +12,8 @@ guard :shell do
     system("make")
   end
   watch(/(src|test)\/(.+)\.(c|h)/) do
+    system("make clean")
+    system("make")
     system("make check || cat test/*_test.log")
   end
   watch(/test\/frontend\/.+\.exp/) do

@@ -25,34 +25,64 @@
  * @author Stas Kobzar <staskobzar@gmail.com>
  */
 #include "tftp.h"
-#include <apr_strings.h>
 #include <stdio.h>
 
 %%{
   machine tftp;
 
   action filename {
-    pack->data->rq.filename = apr_pstrmemdup(mp, mark, fpc - mark);
+    pack->data->rq.len_filename = fpc - mark;
+    pack->data->rq.filename = apr_pstrmemdup(mp, mark, pack->data->rq.len_filename);
     mark = p + 1;
   }
 
-  action mode { pack->data->rq.mode = mark; }
+  action mode {
+    pack->data->rq.len_mode = fpc - mark;
+    pack->data->rq.mode = apr_pstrmemdup(mp, mark, pack->data->rq.len_mode);
+  }
+
+  action block {
+    unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
+    unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
+    block_num = (low << 8) + hi;
+    mark = p;
+  }
+
+  action pack_data {
+    pack->opcode = E_DATA;
+    apr_size_t len = fpc - mark;
+    pack->data->data.block = block_num;
+    apr_cpystrn (pack->data->data.data, mark, len);
+    pack->data->data.length = len;
+  }
+
+  action pack_ack {
+    pack->opcode = E_ACK;
+    pack->data->ack.block = block_num;
+  }
+
+  action pack_error {
+    pack->opcode = E_ERROR;
+    pack->data->error.ercode = block_num;
+    pack->data->error.msg_len = fpc - mark - 1; // -1 for last 0x0 byte
+    pack->data->error.msg = apr_pstrmemdup(mp, mark, pack->data->error.msg_len);
+  }
 
   MODE_OCTET  = /octet/i;
   MODE_ASCII  = /netascii/i;
   MODE_MAIL   = /mail/i;
   MODE        = MODE_OCTET | MODE_ASCII | MODE_MAIL;
-  BLOCK       = extend extend;
+  BLOCK       = extend extend %block;
   ERCODE      = BLOCK;
   ASCII       = 1..127;
 
   RQ    = ASCII+ 0x0 @filename MODE 0x0 @mode;
-  RRQ   = 0x00 0x01 >{pack->opcode = E_RRQ; } RQ;
-  WRQ   = 0x00 0x02 >{pack->opcode = E_WRQ; } RQ;
-  DATA  = 0x00 0x03 >{pack->opcode = E_DATA;} BLOCK any{1,512};
-  ACK   = 0x00 0x04 BLOCK;
-  ERROR = 0x00 0x05 ERCODE ASCII+ 0x0;
-  tftp := (RRQ | WRQ | DATA | ACK | ERROR );
+  RRQ   = 0x00 0x01 >{pack->opcode = E_RRQ;  } RQ;
+  WRQ   = 0x00 0x02 >{pack->opcode = E_WRQ;  } RQ;
+  DATA  = 0x00 0x03 BLOCK extend{1,512}  %pack_data;
+  ACK   = 0x00 0x04 BLOCK             %pack_ack;
+  ERROR = 0x00 0x05 ERCODE ASCII+ 0x0 %pack_error;
+  tftp := (RRQ | WRQ | DATA | ACK | ERROR);
 
 }%%
 
@@ -63,7 +93,9 @@ tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
   int cs;
   char *p  = packet;
   char *pe = p + len;
+  char *eof = pe;
   char *mark = p + 2;
+  uint16_t block_num;
   tftp_pack *pack = (tftp_pack *) apr_palloc (mp, sizeof(tftp_pack));
   pack->data = (union data*) apr_palloc (mp, sizeof(union data));
 

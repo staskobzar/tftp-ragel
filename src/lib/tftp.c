@@ -1,5 +1,5 @@
 
-#line 1 "tftp.rl"
+#line 1 "src/lib/tftp.rl"
 /**
  * tftpclient -- TFTP client application.
  * Copyright (C) 2016, Stas Kobzar <staskobzar@modulis.ca>
@@ -27,18 +27,18 @@
  * @author Stas Kobzar <staskobzar@gmail.com>
  */
 #include "tftp.h"
-#include <apr_strings.h>
 #include <stdio.h>
 
 
-#line 57 "tftp.rl"
+#line 87 "src/lib/tftp.rl"
 
 
 
-#line 39 "tftp.c"
+#line 38 "src/lib/tftp.c"
 static const char _tftp_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1, 
-	3
+	3, 1, 5, 1, 6, 1, 7, 2, 
+	2, 4
 };
 
 static const char _tftp_key_offsets[] = {
@@ -109,7 +109,8 @@ static const char _tftp_key_offsets[] = {
 	51, 51, 51, 51, 51, 51, 51, 51, 
 	51, 51, 51, 51, 51, 51, 51, 51, 
 	51, 51, 51, 51, 51, 51, 51, 51, 
-	51, 51, 51, 51, 51, 51
+	51, 51, 51, 51, 51, 51, 51, 51, 
+	51
 };
 
 static const char _tftp_trans_keys[] = {
@@ -190,7 +191,8 @@ static const char _tftp_single_lengths[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
-	0, 0, 0, 0, 0, 0
+	0, 0, 0, 0, 0, 0, 0, 0, 
+	0
 };
 
 static const char _tftp_range_lengths[] = {
@@ -261,7 +263,8 @@ static const char _tftp_range_lengths[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
-	0, 0, 0, 0, 0, 0
+	0, 0, 0, 0, 0, 0, 0, 0, 
+	0
 };
 
 static const short _tftp_index_offsets[] = {
@@ -332,7 +335,8 @@ static const short _tftp_index_offsets[] = {
 	558, 559, 560, 561, 562, 563, 564, 565, 
 	566, 567, 568, 569, 570, 571, 572, 573, 
 	574, 575, 576, 577, 578, 579, 580, 581, 
-	582, 583, 584, 585, 586, 587
+	582, 583, 584, 585, 586, 587, 588, 589, 
+	590
 };
 
 static const short _tftp_trans_targs[] = {
@@ -344,8 +348,8 @@ static const short _tftp_trans_targs[] = {
 	14, 14, 0, 15, 15, 0, 16, 16, 
 	0, 9, 9, 0, 18, 18, 0, 19, 
 	19, 0, 20, 20, 0, 9, 9, 0, 
-	22, 23, 31, 25, 30, 27, 28, 29, 
-	0, 30, 29, 0, 0, 32, 33, 34, 
+	22, 23, 31, 25, 543, 27, 28, 29, 
+	0, 544, 29, 0, 0, 32, 33, 34, 
 	35, 36, 37, 38, 39, 40, 41, 42, 
 	43, 44, 45, 46, 47, 48, 49, 50, 
 	51, 52, 53, 54, 55, 56, 57, 58, 
@@ -409,11 +413,11 @@ static const short _tftp_trans_targs[] = {
 	515, 516, 517, 518, 519, 520, 521, 522, 
 	523, 524, 525, 526, 527, 528, 529, 530, 
 	531, 532, 533, 534, 535, 536, 537, 538, 
-	539, 540, 541, 30, 0
+	539, 540, 541, 542, 0, 0, 0, 0
 };
 
 static const char _tftp_trans_actions[] = {
-	0, 0, 5, 7, 0, 0, 0, 0, 
+	0, 0, 11, 13, 0, 0, 0, 0, 
 	0, 0, 1, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 3, 0, 0, 
@@ -421,6 +425,7 @@ static const char _tftp_trans_actions[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 5, 0, 0, 0, 0, 5, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
@@ -485,8 +490,79 @@ static const char _tftp_trans_actions[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0
+};
+
+static const char _tftp_eof_actions[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 
-	0, 0, 0, 0, 0
+	0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 7, 15, 
+	9
 };
 
 static const int tftp_start = 1;
@@ -496,26 +572,28 @@ static const int tftp_error = 0;
 static const int tftp_en_tftp = 1;
 
 
-#line 60 "tftp.rl"
+#line 90 "src/lib/tftp.rl"
 
 tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
 {
   int cs;
   char *p  = packet;
   char *pe = p + len;
+  char *eof = pe;
   char *mark = p + 2;
+  uint16_t block_num;
   tftp_pack *pack = (tftp_pack *) apr_palloc (mp, sizeof(tftp_pack));
   pack->data = (union data*) apr_palloc (mp, sizeof(union data));
-  printf("p : %p, pe : %p\n", p, pe);
+
   
-#line 512 "tftp.c"
+#line 590 "src/lib/tftp.c"
 	{
 	cs = tftp_start;
 	}
 
-#line 71 "tftp.rl"
+#line 103 "src/lib/tftp.rl"
   
-#line 519 "tftp.c"
+#line 597 "src/lib/tftp.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -589,25 +667,38 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 34 "tftp.rl"
+#line 33 "src/lib/tftp.rl"
 	{
-    pack->data->rq.filename = apr_pstrmemdup(mp, mark, p - mark);
+    pack->data->rq.len_filename = p - mark;
+    pack->data->rq.filename = apr_pstrmemdup(mp, mark, pack->data->rq.len_filename);
     mark = p + 1;
   }
 	break;
 	case 1:
-#line 39 "tftp.rl"
-	{ pack->data->rq.mode = mark; }
+#line 39 "src/lib/tftp.rl"
+	{
+    pack->data->rq.len_mode = p - mark;
+    pack->data->rq.mode = apr_pstrmemdup(mp, mark, pack->data->rq.len_mode);
+  }
 	break;
 	case 2:
-#line 50 "tftp.rl"
-	{pack->opcode = E_RRQ;}
+#line 44 "src/lib/tftp.rl"
+	{
+    unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
+    unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
+    block_num = (low << 8) + hi;
+    mark = p;
+  }
 	break;
-	case 3:
-#line 51 "tftp.rl"
-	{pack->opcode = E_WRQ;}
+	case 6:
+#line 80 "src/lib/tftp.rl"
+	{pack->opcode = E_RRQ;  }
 	break;
-#line 611 "tftp.c"
+	case 7:
+#line 81 "src/lib/tftp.rl"
+	{pack->opcode = E_WRQ;  }
+	break;
+#line 702 "src/lib/tftp.c"
 		}
 	}
 
@@ -617,10 +708,56 @@ _again:
 	if ( ++p != pe )
 		goto _resume;
 	_test_eof: {}
+	if ( p == eof )
+	{
+	const char *__acts = _tftp_actions + _tftp_eof_actions[cs];
+	unsigned int __nacts = (unsigned int) *__acts++;
+	while ( __nacts-- > 0 ) {
+		switch ( *__acts++ ) {
+	case 2:
+#line 44 "src/lib/tftp.rl"
+	{
+    unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
+    unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
+    block_num = (low << 8) + hi;
+    mark = p;
+  }
+	break;
+	case 3:
+#line 51 "src/lib/tftp.rl"
+	{
+    pack->opcode = E_DATA;
+    apr_size_t len = p - mark;
+    pack->data->data.block = block_num;
+    apr_cpystrn (pack->data->data.data, mark, len);
+    pack->data->data.length = len;
+  }
+	break;
+	case 4:
+#line 59 "src/lib/tftp.rl"
+	{
+    pack->opcode = E_ACK;
+    pack->data->ack.block = block_num;
+  }
+	break;
+	case 5:
+#line 64 "src/lib/tftp.rl"
+	{
+    pack->opcode = E_ERROR;
+    pack->data->error.ercode = block_num;
+    pack->data->error.msg_len = p - mark - 1; // -1 for last 0x0 byte
+    pack->data->error.msg = apr_pstrmemdup(mp, mark, pack->data->error.msg_len);
+  }
+	break;
+#line 753 "src/lib/tftp.c"
+		}
+	}
+	}
+
 	_out: {}
 	}
 
-#line 72 "tftp.rl"
+#line 104 "src/lib/tftp.rl"
 
   if ( cs < tftp_first_final )
     printf ("ERROR PARSING cs = %d, tftp_first_final = %d\n", cs, tftp_first_final);

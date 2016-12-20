@@ -112,8 +112,8 @@ test/*.trs
 test/site.bak
 
 confesSfsP/
-src/luhn
-test/luhn_tests
+src/tftpclient
+test/tftp_test
 *.tar.gz
 Gemfile.lock
 doc/Doxyfile

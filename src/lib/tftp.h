@@ -27,6 +27,7 @@
 
 #include <stdint.h>
 #include <apr_general.h>
+#include <apr_strings.h>
 
 #define MODE_OCTET "octet"
 #define MODE_ASCII "netascii"
@@ -48,7 +49,9 @@ enum opcodes {
 */
 struct pack_rq {
   char *filename;
+  unsigned int len_filename;
   char *mode;
+  unsigned int len_mode;
 };
 
 /*
@@ -60,7 +63,8 @@ struct pack_rq {
 */
 struct pack_data {
   uint16_t block;
-  char data[512];
+  unsigned char data[512];
+  unsigned int length;
 };
 
 /*
@@ -84,6 +88,7 @@ struct pack_ack {
 struct pack_error {
   uint16_t ercode;
   char *msg;
+  unsigned int msg_len;
 };
 
 union data {
