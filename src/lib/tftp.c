@@ -30,7 +30,7 @@
 #include <stdio.h>
 
 
-#line 87 "src/lib/tftp.rl"
+#line 95 "src/lib/tftp.rl"
 
 
 
@@ -572,7 +572,7 @@ static const int tftp_error = 0;
 static const int tftp_en_tftp = 1;
 
 
-#line 90 "src/lib/tftp.rl"
+#line 98 "src/lib/tftp.rl"
 
 tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
 {
@@ -591,7 +591,7 @@ tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
 	cs = tftp_start;
 	}
 
-#line 103 "src/lib/tftp.rl"
+#line 111 "src/lib/tftp.rl"
   
 #line 597 "src/lib/tftp.c"
 	{
@@ -679,10 +679,17 @@ _match:
 	{
     pack->data->rq.len_mode = p - mark;
     pack->data->rq.mode = apr_pstrmemdup(mp, mark, pack->data->rq.len_mode);
+    if(apr_strnatcasecmp (pack->data->rq.mode, MODE_OCTET) == 0) {
+      pack->data->rq.e_mode = E_OCTET;
+    } else if( apr_strnatcasecmp (pack->data->rq.mode, MODE_ASCII) == 0) {
+      pack->data->rq.e_mode = E_ASCII;
+    } else {
+      pack->data->rq.e_mode = E_MAIL;
+    }
   }
 	break;
 	case 2:
-#line 44 "src/lib/tftp.rl"
+#line 51 "src/lib/tftp.rl"
 	{
     unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
     unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
@@ -691,14 +698,14 @@ _match:
   }
 	break;
 	case 6:
-#line 80 "src/lib/tftp.rl"
+#line 87 "src/lib/tftp.rl"
 	{pack->opcode = E_RRQ;  }
 	break;
 	case 7:
-#line 81 "src/lib/tftp.rl"
+#line 88 "src/lib/tftp.rl"
 	{pack->opcode = E_WRQ;  }
 	break;
-#line 702 "src/lib/tftp.c"
+#line 709 "src/lib/tftp.c"
 		}
 	}
 
@@ -715,7 +722,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 2:
-#line 44 "src/lib/tftp.rl"
+#line 51 "src/lib/tftp.rl"
 	{
     unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
     unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
@@ -724,7 +731,7 @@ _again:
   }
 	break;
 	case 3:
-#line 51 "src/lib/tftp.rl"
+#line 58 "src/lib/tftp.rl"
 	{
     pack->opcode = E_DATA;
     apr_size_t len = p - mark;
@@ -734,14 +741,14 @@ _again:
   }
 	break;
 	case 4:
-#line 59 "src/lib/tftp.rl"
+#line 66 "src/lib/tftp.rl"
 	{
     pack->opcode = E_ACK;
     pack->data->ack.block = block_num;
   }
 	break;
 	case 5:
-#line 64 "src/lib/tftp.rl"
+#line 71 "src/lib/tftp.rl"
 	{
     pack->opcode = E_ERROR;
     pack->data->error.ercode = block_num;
@@ -749,7 +756,7 @@ _again:
     pack->data->error.msg = apr_pstrmemdup(mp, mark, pack->data->error.msg_len);
   }
 	break;
-#line 753 "src/lib/tftp.c"
+#line 760 "src/lib/tftp.c"
 		}
 	}
 	}
@@ -757,7 +764,7 @@ _again:
 	_out: {}
 	}
 
-#line 104 "src/lib/tftp.rl"
+#line 112 "src/lib/tftp.rl"
 
   if ( cs < tftp_first_final )
     printf ("ERROR PARSING cs = %d, tftp_first_final = %d\n", cs, tftp_first_final);

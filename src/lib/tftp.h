@@ -29,83 +29,91 @@
 #include <apr_general.h>
 #include <apr_strings.h>
 
-#define MODE_OCTET "octet"
-#define MODE_ASCII "netascii"
-#define MODE_MAIL  "mail"
+#define MODE_OCTET "octet"      /*!< define octet mode */
+#define MODE_ASCII "netascii"   /*!< define netascii mode */
+#define MODE_MAIL  "mail"       /*!< define mail mode */
 
+/**
+ * @enum mode
+ * TFTP transfer modes.
+ */
+enum mode {
+  E_OCTET = 0x0a, /*!< octet mode */
+  E_ASCII,        /*!< netascii mode */
+  E_MAIL          /*!< mail mode */
+};
+
+/*!
+ * @enum opcodes
+ * opcodes of TFTP packet types.
+ * see: https://tools.ietf.org/html/rfc1350 section 5
+ */
 enum opcodes {
-  E_RRQ   = 0x01,
-  E_WRQ   = 0x02,
-  E_DATA  = 0x03,
-  E_ACK   = 0x04,
-  E_ERROR = 0x05,
+  E_RRQ   = 0x01, /*!< Read request */
+  E_WRQ   = 0x02, /*!< Write request */
+  E_DATA  = 0x03, /*!< Data */
+  E_ACK   = 0x04, /*!< Acknowledgment */
+  E_ERROR = 0x05, /*!< Error */
 };
-/*
-   Type   Op #     Format without header
-          2 bytes    string   1 byte     string   1 byte
-          -----------------------------------------------
-   RRQ/  | 01/02 |  Filename  |   0  |    Mode    |   0  |
-   WRQ    -----------------------------------------------
-*/
+
+/**
+ * TFTP packet structure for RRQ/WRQ packets without opcode.
+ * Structure: filename 0x00 mode 0x00
+ */
 struct pack_rq {
-  char *filename;
-  unsigned int len_filename;
-  char *mode;
-  unsigned int len_mode;
+  char *filename;             /*!< Requested file name */
+  unsigned int len_filename;  /*!< File name length */
+  char *mode;                 /*!< Transfer mode as string (netascii, octet, mail) */
+  unsigned int len_mode;      /*!< Transfer mode string length */
+  enum mode e_mode;           /*!< Transfer mode enum value */
 };
 
-/*
-   Type   Op #     Format without header
-          2 bytes    2 bytes       n bytes
-          ---------------------------------
-   DATA  | 03    |   Block #  |    Data    |
-          ---------------------------------
-*/
+/**
+ * TFTP DATA packet structure without opcode.
+ */
 struct pack_data {
-  uint16_t block;
-  unsigned char data[512];
-  unsigned int length;
+  uint16_t block;          /*!< block number 2 bytes */
+  unsigned char data[512]; /*!< data field up to 512 bytes */
+  unsigned int length;     /*!< data 2 bytes field length. When transfer, should be 512 bytes.
+                                If less then 512 bytes, then this is the last TFTP packet. */
 };
 
-/*
-   Type   Op #     Format without header
-          2 bytes    2 bytes
-          -------------------
-   ACK   | 04    |   Block #  |
-          --------------------
-*/
+/**
+ * TFTP ACK packet structure without opcode.
+ */
 struct pack_ack {
-  uint16_t block;
+  uint16_t block; /*!< block number 2 bytes */
 };
 
-/*
-   Type   Op #     Format without header
-          2 bytes  2 bytes        string    1 byte
-          ----------------------------------------
-   ERROR | 05    |  ErrorCode |   ErrMsg   |   0  |
-          ----------------------------------------
-*/
+/**
+ * TFTP ERROR packet structure without opcode.
+ * Structure: code message 0x00
+ */
 struct pack_error {
-  uint16_t ercode;
-  char *msg;
-  unsigned int msg_len;
+  uint16_t ercode;      /*!< error code (2 bytes) */
+  char *msg;            /*!< error message */
+  unsigned int msg_len; /*!< error message length */
 };
 
+/**
+ * TFTP packet union for data
+ */
 union data {
-  struct pack_rq    rq;
-  struct pack_data  data;
-  struct pack_ack   ack;
-  struct pack_error error;
+  struct pack_rq    rq;   /*!< WRQ/RRQ packet */
+  struct pack_data  data; /*!< DATA packet */
+  struct pack_ack   ack;  /*!< ACK packet */
+  struct pack_error error;/*!< ERROR packet */
 };
 
 /**
  * TFTP packet structure.
  */
 struct tftp_pack_s {
-  uint16_t opcode;
-  union data *data;
+  uint16_t opcode;  /*!< opcode of TFTP packet: WRQ, RRQ, DATA etc. */
+  union data *data; /*!< \union TFTP packet structure */
 };
 
+/*! TFTP packet type */
 typedef struct tftp_pack_s tftp_pack;
 
 /**

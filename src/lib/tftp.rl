@@ -39,6 +39,13 @@
   action mode {
     pack->data->rq.len_mode = fpc - mark;
     pack->data->rq.mode = apr_pstrmemdup(mp, mark, pack->data->rq.len_mode);
+    if(apr_strnatcasecmp (pack->data->rq.mode, MODE_OCTET) == 0) {
+      pack->data->rq.e_mode = E_OCTET;
+    } else if( apr_strnatcasecmp (pack->data->rq.mode, MODE_ASCII) == 0) {
+      pack->data->rq.e_mode = E_ASCII;
+    } else {
+      pack->data->rq.e_mode = E_MAIL;
+    }
   }
 
   action block {
@@ -80,8 +87,9 @@
   RRQ   = 0x00 0x01 >{pack->opcode = E_RRQ;  } RQ;
   WRQ   = 0x00 0x02 >{pack->opcode = E_WRQ;  } RQ;
   DATA  = 0x00 0x03 BLOCK extend{1,512}  %pack_data;
-  ACK   = 0x00 0x04 BLOCK             %pack_ack;
-  ERROR = 0x00 0x05 ERCODE ASCII+ 0x0 %pack_error;
+  ACK   = 0x00 0x04 BLOCK                %pack_ack;
+  ERROR = 0x00 0x05 ERCODE ASCII+ 0x0    %pack_error;
+
   tftp := (RRQ | WRQ | DATA | ACK | ERROR);
 
 }%%
