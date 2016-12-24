@@ -27,34 +27,39 @@
  * @author Stas Kobzar <staskobzar@gmail.com>
  */
 #include "tftp.h"
-#include <stdio.h>
 
-/* TODO: convert to macros */
-static apr_size_t tftp_rq ( char *buf,
-                            enum opcodes opcode,
-                            struct pack_rq *rq)
-{
-/*
-  2 bytes     string    1 byte     string   1 byte
- ------------------------------------------------
-| Opcode |  Filename  |   0  |    Mode    |   0  |
-------------------------------------------------
-*/
-  return apr_snprintf (buf, DATA_SIZE + 4, "%c%c%.*s%c%.*s%c",
-    0x0, opcode, rq->len_filename, rq->filename,
-    0x0, rq->len_mode, rq->mode, 0x0
-  );
-}
+/*! @def tftp_req_pack(buf, opcode, pack)
+ * Create request packet as char array.
+ * @param buf     Result buffer as char array
+ * @param opcode  TFTP packet opcode. E_RRQ or E_WRQ.
+ * @param pack    Packet structure pack_rq
+ */
+#define tftp_req_pack(buf, opcode, pack) apr_snprintf ((buf),     \
+                DATA_SIZE + 4, "%c%c%.*s%c%.*s%c", 0x0, (opcode), \
+                (pack)->len_filename, (pack)->filename, 0x0,      \
+                (pack)->len_mode, (pack)->mode, 0x0 )
+
+/*! @def low_byte(num)
+ * Get lower byte of short int
+ * @param num   16 bit integer
+ */
+#define low_byte(num) ( (num) >> 8 )
+
+/*! @def hi_byte(num)
+ * Get higher byte of short int
+ * @param num   16 bit integer
+ */
+#define hi_byte(num)  ( (num) & 0x00ff )
 
 /**
  * Ragel Finit State Machine
  */
 
-#line 115 "src/lib/tftp.rl"
+#line 120 "src/lib/tftp.rl"
 
 
 
-#line 58 "src/lib/tftp.c"
+#line 63 "src/lib/tftp.c"
 static const char _tftp_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1, 
 	3, 1, 5, 1, 6, 1, 7, 2, 
@@ -592,7 +597,7 @@ static const int tftp_error = 0;
 static const int tftp_en_tftp = 1;
 
 
-#line 118 "src/lib/tftp.rl"
+#line 123 "src/lib/tftp.rl"
 
 tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
 {
@@ -606,14 +611,14 @@ tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
   pack->data = (union data*) apr_palloc (mp, sizeof(union data));
 
   
-#line 610 "src/lib/tftp.c"
+#line 615 "src/lib/tftp.c"
 	{
 	cs = tftp_start;
 	}
 
-#line 131 "src/lib/tftp.rl"
+#line 136 "src/lib/tftp.rl"
   
-#line 617 "src/lib/tftp.c"
+#line 622 "src/lib/tftp.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -687,7 +692,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 53 "src/lib/tftp.rl"
+#line 58 "src/lib/tftp.rl"
 	{
     pack->data->rq.len_filename = p - mark;
     pack->data->rq.filename = apr_pstrmemdup(mp, mark, pack->data->rq.len_filename);
@@ -695,7 +700,7 @@ _match:
   }
 	break;
 	case 1:
-#line 59 "src/lib/tftp.rl"
+#line 64 "src/lib/tftp.rl"
 	{
     pack->data->rq.len_mode = p - mark;
     pack->data->rq.mode = apr_pstrmemdup(mp, mark, pack->data->rq.len_mode);
@@ -709,7 +714,7 @@ _match:
   }
 	break;
 	case 2:
-#line 71 "src/lib/tftp.rl"
+#line 76 "src/lib/tftp.rl"
 	{
     unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
     unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
@@ -718,14 +723,14 @@ _match:
   }
 	break;
 	case 6:
-#line 107 "src/lib/tftp.rl"
+#line 112 "src/lib/tftp.rl"
 	{pack->opcode = E_RRQ;}
 	break;
 	case 7:
-#line 108 "src/lib/tftp.rl"
+#line 113 "src/lib/tftp.rl"
 	{pack->opcode = E_WRQ;}
 	break;
-#line 729 "src/lib/tftp.c"
+#line 734 "src/lib/tftp.c"
 		}
 	}
 
@@ -742,7 +747,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 2:
-#line 71 "src/lib/tftp.rl"
+#line 76 "src/lib/tftp.rl"
 	{
     unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
     unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
@@ -751,7 +756,7 @@ _again:
   }
 	break;
 	case 3:
-#line 78 "src/lib/tftp.rl"
+#line 83 "src/lib/tftp.rl"
 	{
     pack->opcode = E_DATA;
     apr_size_t len = p - mark;
@@ -761,14 +766,14 @@ _again:
   }
 	break;
 	case 4:
-#line 86 "src/lib/tftp.rl"
+#line 91 "src/lib/tftp.rl"
 	{
     pack->opcode = E_ACK;
     pack->data->ack.block = block_num;
   }
 	break;
 	case 5:
-#line 91 "src/lib/tftp.rl"
+#line 96 "src/lib/tftp.rl"
 	{
     pack->opcode = E_ERROR;
     pack->data->error.ercode = block_num;
@@ -776,7 +781,7 @@ _again:
     pack->data->error.msg = apr_pstrmemdup(mp, mark, pack->data->error.msg_len);
   }
 	break;
-#line 780 "src/lib/tftp.c"
+#line 785 "src/lib/tftp.c"
 		}
 	}
 	}
@@ -784,7 +789,7 @@ _again:
 	_out: {}
 	}
 
-#line 132 "src/lib/tftp.rl"
+#line 137 "src/lib/tftp.rl"
 
   if ( cs < tftp_first_final )
     return NULL;
@@ -793,31 +798,26 @@ _again:
 
 apr_size_t tftp_create_rrq (char *buf, struct pack_rq *rq)
 {
-  return tftp_rq (buf, E_RRQ, rq);
+  return tftp_req_pack(buf, E_RRQ, rq);
 }
 
 apr_size_t tftp_create_wrq (char *buf, struct pack_rq *rq)
 {
-  return tftp_rq (buf, E_WRQ, rq);
+  return tftp_req_pack(buf, E_WRQ, rq);
 }
 
 apr_size_t tftp_create_data (char *buf, struct pack_data *data)
 {
-  unsigned char low = (data->block >> 8) & 0xff;
-  unsigned char hi  = (data->block - (low << 8)) & 0xff;
-
   return apr_snprintf (buf, DATA_SIZE + 5, "%c%c%c%c%.*s",
-    0x0, E_DATA, low, hi, data->length, data->data
+    0x0, E_DATA, low_byte(data->block), hi_byte(data->block),
+    data->length, data->data
   );
 }
 
 apr_size_t tftp_create_ack (char *buf, int block)
 {
-  unsigned char low = (block >> 8) & 0xff;
-  unsigned char hi  = (block - (low << 8)) & 0xff;
-
   return apr_snprintf (buf, DATA_SIZE, "%c%c%c%c",
-    0x0, E_ACK, low, hi);
+    0x0, E_ACK, low_byte(block), hi_byte(block));
 }
 
 apr_size_t tftp_create_error (char *buf, struct pack_error *error)

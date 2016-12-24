@@ -25,24 +25,29 @@
  * @author Stas Kobzar <staskobzar@gmail.com>
  */
 #include "tftp.h"
-#include <stdio.h>
 
-/* TODO: convert to macros */
-static apr_size_t tftp_rq ( char *buf,
-                            enum opcodes opcode,
-                            struct pack_rq *rq)
-{
-/*
-  2 bytes     string    1 byte     string   1 byte
- ------------------------------------------------
-| Opcode |  Filename  |   0  |    Mode    |   0  |
-------------------------------------------------
-*/
-  return apr_snprintf (buf, DATA_SIZE + 4, "%c%c%.*s%c%.*s%c",
-    0x0, opcode, rq->len_filename, rq->filename,
-    0x0, rq->len_mode, rq->mode, 0x0
-  );
-}
+/*! @def tftp_req_pack(buf, opcode, pack)
+ * Create request packet as char array.
+ * @param buf     Result buffer as char array
+ * @param opcode  TFTP packet opcode. E_RRQ or E_WRQ.
+ * @param pack    Packet structure pack_rq
+ */
+#define tftp_req_pack(buf, opcode, pack) apr_snprintf ((buf),     \
+                DATA_SIZE + 4, "%c%c%.*s%c%.*s%c", 0x0, (opcode), \
+                (pack)->len_filename, (pack)->filename, 0x0,      \
+                (pack)->len_mode, (pack)->mode, 0x0 )
+
+/*! @def low_byte(num)
+ * Get lower byte of short int
+ * @param num   16 bit integer
+ */
+#define low_byte(num) ( (num) >> 8 )
+
+/*! @def hi_byte(num)
+ * Get higher byte of short int
+ * @param num   16 bit integer
+ */
+#define hi_byte(num)  ( (num) & 0x00ff )
 
 /**
  * Ragel Finit State Machine
@@ -137,31 +142,26 @@ tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
 
 apr_size_t tftp_create_rrq (char *buf, struct pack_rq *rq)
 {
-  return tftp_rq (buf, E_RRQ, rq);
+  return tftp_req_pack(buf, E_RRQ, rq);
 }
 
 apr_size_t tftp_create_wrq (char *buf, struct pack_rq *rq)
 {
-  return tftp_rq (buf, E_WRQ, rq);
+  return tftp_req_pack(buf, E_WRQ, rq);
 }
 
 apr_size_t tftp_create_data (char *buf, struct pack_data *data)
 {
-  unsigned char low = (data->block >> 8) & 0xff;
-  unsigned char hi  = (data->block - (low << 8)) & 0xff;
-
   return apr_snprintf (buf, DATA_SIZE + 5, "%c%c%c%c%.*s",
-    0x0, E_DATA, low, hi, data->length, data->data
+    0x0, E_DATA, low_byte(data->block), hi_byte(data->block),
+    data->length, data->data
   );
 }
 
 apr_size_t tftp_create_ack (char *buf, int block)
 {
-  unsigned char low = (block >> 8) & 0xff;
-  unsigned char hi  = (block - (low << 8)) & 0xff;
-
   return apr_snprintf (buf, DATA_SIZE, "%c%c%c%c",
-    0x0, E_ACK, low, hi);
+    0x0, E_ACK, low_byte(block), hi_byte(block));
 }
 
 apr_size_t tftp_create_error (char *buf, struct pack_error *error)
