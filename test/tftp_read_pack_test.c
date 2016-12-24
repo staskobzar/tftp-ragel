@@ -11,9 +11,10 @@
 char raw_rrq[] = {0x00,0x01,0x66,0x6f,0x6f,
                   0x2e,0x63,0x00,0x6e, 0x65,0x74,0x61,0x73,0x63,
                   0x69,0x69,0x00};
+
 char raw_case_rrq[] = {0x00,0x01,0x7a,0x6f,
                        0x69,0x70,0x65,0x72, 0x2e,0x72,0x75,0x6e,
-                       0x00,0x6f,0x43,0x74, 0x45,0x74,0x00};
+                       0x00,0x4d,0x41,0x69, 0x6c,0x00};
 
 char raw_wrq[] = {0x00,0x02,0x52,0x45, 0x41,0x44,0x4d,0x45,
                   0x00,0x6f,0x63,0x74, 0x65,0x74,0x00 };
@@ -123,14 +124,14 @@ static void read_wrq_pack_test (void **state)
 static void read_caseins_rrq_pack_test (void **state)
 {
   char filename[] = "zoiper.run";
-  char mode[] = "oCtEt";
+  char mode[] = "MAil";
   tftp_pack *pack = tftp_packet_read(raw_case_rrq, sizeof(raw_case_rrq), *state);
   assert_int_equal (pack->opcode, E_RRQ);
   assert_string_equal (pack->data->rq.filename, filename);
   assert_int_equal (pack->data->rq.len_filename, strlen(filename));
   assert_string_equal (pack->data->rq.mode, mode);
   assert_int_equal (pack->data->rq.len_mode, strlen(mode));
-  assert_int_equal (pack->data->rq.e_mode, E_OCTET);
+  assert_int_equal (pack->data->rq.e_mode, E_MAIL);
 }
 
 
@@ -153,7 +154,7 @@ static void read_data_pack_test (void **state)
 // ----------------------------------
 static void read_last_data_pack_test (void **state)
 {
-  char  data_str[] = "gs.";
+  char  data_str[] = "gs.\n";
   char *data_p = data_str;
   tftp_pack *pack = tftp_packet_read(raw_last_data, sizeof(raw_last_data), *state);
   assert_int_equal (pack->opcode, E_DATA);
@@ -195,6 +196,14 @@ static void read_error_pack_test (void **state)
   assert_int_equal (pack->data->error.msg_len, 14);
 }
 
+/* Test invalid tftp packet. */
+// ----------------------------------
+static void read_invalid_pack_test (void **state)
+{
+  char raw_invalid[] = {0x00,0x0f,0x66,0x6f,0x6f, 0x2e,0x63,0x00,0x6e, 0x65,0x74,0x61,0x73,0x63, 0x69,0x69,0x00};
+  assert_null(tftp_packet_read(raw_invalid, sizeof(raw_invalid), *state));
+}
+
 /*
  * Run all tests.
  */
@@ -209,6 +218,7 @@ int main(void)
     cmocka_unit_test_setup_teardown (read_last_data_pack_test, setup, teardown),
     cmocka_unit_test_setup_teardown (read_ack_pack_test, setup, teardown),
     cmocka_unit_test_setup_teardown (read_error_pack_test, setup, teardown),
+    cmocka_unit_test_setup_teardown (read_invalid_pack_test, setup, teardown),
   };
   return cmocka_run_group_tests_name("tftpclient library tests", tests, NULL, NULL);
 }

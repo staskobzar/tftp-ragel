@@ -27,6 +27,26 @@
 #include "tftp.h"
 #include <stdio.h>
 
+/* TODO: convert to macros */
+static apr_size_t tftp_rq ( char *buf,
+                            enum opcodes opcode,
+                            struct pack_rq *rq)
+{
+/*
+  2 bytes     string    1 byte     string   1 byte
+ ------------------------------------------------
+| Opcode |  Filename  |   0  |    Mode    |   0  |
+------------------------------------------------
+*/
+  return apr_snprintf (buf, DATA_SIZE + 4, "%c%c%.*s%c%.*s%c",
+    0x0, opcode, rq->len_filename, rq->filename,
+    0x0, rq->len_mode, rq->mode, 0x0
+  );
+}
+
+/**
+ * Ragel Finit State Machine
+ */
 %%{
   machine tftp;
 
@@ -51,7 +71,7 @@
   action block {
     unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
     unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
-    block_num = (low << 8) + hi;
+    block_num = hi | (low << 8);
     mark = p;
   }
 
@@ -59,7 +79,7 @@
     pack->opcode = E_DATA;
     apr_size_t len = fpc - mark;
     pack->data->data.block = block_num;
-    apr_cpystrn (pack->data->data.data, mark, len);
+    apr_cpystrn (pack->data->data.data, mark, len + 1);
     pack->data->data.length = len;
   }
 
@@ -84,8 +104,8 @@
   ASCII       = 1..127;
 
   RQ    = ASCII+ 0x0 @filename MODE 0x0 @mode;
-  RRQ   = 0x00 0x01 >{pack->opcode = E_RRQ;  } RQ;
-  WRQ   = 0x00 0x02 >{pack->opcode = E_WRQ;  } RQ;
+  RRQ   = 0x00 0x01 >{pack->opcode = E_RRQ;} RQ;
+  WRQ   = 0x00 0x02 >{pack->opcode = E_WRQ;} RQ;
   DATA  = 0x00 0x03 BLOCK extend{1,512}  %pack_data;
   ACK   = 0x00 0x04 BLOCK                %pack_ack;
   ERROR = 0x00 0x05 ERCODE ASCII+ 0x0    %pack_error;
@@ -99,10 +119,10 @@
 tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
 {
   int cs;
-  char *p  = packet;
-  char *pe = p + len;
-  char *eof = pe;
-  char *mark = p + 2;
+  char *p     = packet;
+  char *pe    = p + len;
+  char *eof   = pe;
+  char *mark  = p + 2;
   uint16_t block_num;
   tftp_pack *pack = (tftp_pack *) apr_palloc (mp, sizeof(tftp_pack));
   pack->data = (union data*) apr_palloc (mp, sizeof(union data));
@@ -111,7 +131,42 @@ tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
   %%write exec;
 
   if ( cs < tftp_first_final )
-    printf ("ERROR PARSING cs = %d, tftp_first_final = %d\n", cs, tftp_first_final);
+    return NULL;
   return pack;
 }
 
+apr_size_t tftp_create_rrq (char *buf, struct pack_rq *rq)
+{
+  return tftp_rq (buf, E_RRQ, rq);
+}
+
+apr_size_t tftp_create_wrq (char *buf, struct pack_rq *rq)
+{
+  return tftp_rq (buf, E_WRQ, rq);
+}
+
+apr_size_t tftp_create_data (char *buf, struct pack_data *data)
+{
+  unsigned char low = (data->block >> 8) & 0xff;
+  unsigned char hi  = (data->block - (low << 8)) & 0xff;
+
+  return apr_snprintf (buf, DATA_SIZE + 5, "%c%c%c%c%.*s",
+    0x0, E_DATA, low, hi, data->length, data->data
+  );
+}
+
+apr_size_t tftp_create_ack (char *buf, int block)
+{
+  unsigned char low = (block >> 8) & 0xff;
+  unsigned char hi  = (block - (low << 8)) & 0xff;
+
+  return apr_snprintf (buf, DATA_SIZE, "%c%c%c%c",
+    0x0, E_ACK, low, hi);
+}
+
+apr_size_t tftp_create_error (char *buf, struct pack_error *error)
+{
+  return apr_snprintf (buf, DATA_SIZE, "%c%c%c%c%.*s%c",
+    0x0, E_ERROR, 0x0, error->ercode, error->msg_len,
+    error->msg, 0x0);
+}

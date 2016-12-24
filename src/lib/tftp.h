@@ -33,6 +33,7 @@
 #define MODE_ASCII "netascii"   /*!< define netascii mode */
 #define MODE_MAIL  "mail"       /*!< define mail mode */
 
+#define DATA_SIZE  512          /*!< TFTP data block size as defined in RFC1350 */
 /**
  * @enum mode
  * TFTP transfer modes.
@@ -56,6 +57,22 @@ enum opcodes {
   E_ERROR = 0x05, /*!< Error */
 };
 
+/*!
+ * @enum ercode
+ * Error Codes of TFTP packet types.
+ * see: https://tools.ietf.org/html/rfc1350
+ */
+enum ercode {
+   ERR_UNDEF,     /*!< Not defined, see error message (if any). */
+   ERR_NOTFOUND,  /*!< File not found. */
+   ERR_ACCESS,    /*!< Access violation. */
+   ERR_DISKFULL,  /*!< Disk full or allocation exceeded. */
+   ERR_ILLEGAL,   /*!< Illegal TFTP operation. */
+   ERR_XFERID,    /*!< Unknown transfer ID. */
+   ERR_EXISTS,    /*!< File already exists. */
+   ERR_NOUSER     /*!< No such user. */
+};
+
 /**
  * TFTP packet structure for RRQ/WRQ packets without opcode.
  * Structure: filename 0x00 mode 0x00
@@ -73,7 +90,7 @@ struct pack_rq {
  */
 struct pack_data {
   uint16_t block;          /*!< block number 2 bytes */
-  unsigned char data[512]; /*!< data field up to 512 bytes */
+  unsigned char data[DATA_SIZE]; /*!< data field up to 512 bytes */
   unsigned int length;     /*!< data 2 bytes field length. When transfer, should be 512 bytes.
                                 If less then 512 bytes, then this is the last TFTP packet. */
 };
@@ -90,7 +107,7 @@ struct pack_ack {
  * Structure: code message 0x00
  */
 struct pack_error {
-  uint16_t ercode;      /*!< error code (2 bytes) */
+  enum ercode ercode;      /*!< error code (2 bytes) */
   char *msg;            /*!< error message */
   unsigned int msg_len; /*!< error message length */
 };
@@ -121,7 +138,47 @@ typedef struct tftp_pack_s tftp_pack;
  * @param packet TFTP packet
  * @param len    Packet length
  * @param mp     APR memory pool
- * @return tftp_pack struct
+ * @return tftp_pack struct or NULL if packet if failed to parse
  */
 tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp);
+
+/**
+ * Create TFTP RRQ packet.
+ * @param buf   Buffer where the result TFTP packet will be stored as char array.
+ * @param rq    RRQ packet structure
+ * @return Packet length
+ */
+apr_size_t tftp_create_rrq (char *buf, struct pack_rq *rq);
+
+/**
+ * Create TFTP WRQ packet.
+ * @param buf   Buffer where the result TFTP packet will be stored as char array.
+ * @param rq    RRQ packet structure
+ * @return Packet length
+ */
+apr_size_t tftp_create_wrq (char *buf, struct pack_rq *rq);
+
+/**
+ * Create TFTP DATA packet.
+ * @param buf   Buffer where the result TFTP packet will be stored as char array.
+ * @param data  DATA packet structure
+ * @return Packet length
+ */
+apr_size_t tftp_create_data (char *buf, struct pack_data *data);
+
+/**
+ * Create TFTP ACK packet.
+ * @param buf   Buffer where the result TFTP packet will be stored as char array.
+ * @param block Block number
+ * @return Packet length
+ */
+apr_size_t tftp_create_ack (char *buf, int block);
+
+/**
+ * Create TFTP ERROR packet.
+ * @param buf   Buffer where the result TFTP packet will be stored as char array.
+ * @param error ERROR packet structure
+ * @return Packet length
+ */
+apr_size_t tftp_create_error (char *buf, struct pack_error *error);
 
