@@ -26,29 +26,6 @@
  */
 #include "tftp.h"
 
-/*! @def tftp_req_pack(buf, opcode, pack)
- * Create request packet as char array.
- * @param buf     Result buffer as char array
- * @param opcode  TFTP packet opcode. E_RRQ or E_WRQ.
- * @param pack    Packet structure pack_rq
- */
-#define tftp_req_pack(buf, opcode, pack) apr_snprintf ((buf),     \
-                DATA_SIZE + 4, "%c%c%.*s%c%.*s%c", 0x0, (opcode), \
-                (pack)->len_filename, (pack)->filename, 0x0,      \
-                (pack)->len_mode, (pack)->mode, 0x0 )
-
-/*! @def low_byte(num)
- * Get lower byte of short int
- * @param num   16 bit integer
- */
-#define low_byte(num) ( (num) >> 8 )
-
-/*! @def hi_byte(num)
- * Get higher byte of short int
- * @param num   16 bit integer
- */
-#define hi_byte(num)  ( (num) & 0x00ff )
-
 /**
  * Ragel Finit State Machine
  */
@@ -84,8 +61,8 @@
     pack->opcode = E_DATA;
     apr_size_t len = fpc - mark;
     pack->data->data.block = block_num;
-    apr_cpystrn (pack->data->data.data, mark, len + 1);
     pack->data->data.length = len;
+    apr_cpystrn (pack->data->data.data, mark, len + 1);
   }
 
   action pack_ack {
@@ -137,6 +114,7 @@ tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
 
   if ( cs < tftp_first_final )
     return NULL;
+
   return pack;
 }
 
@@ -170,3 +148,41 @@ apr_size_t tftp_create_error (char *buf, struct pack_error *error)
     0x0, E_ERROR, 0x0, error->ercode, error->msg_len,
     error->msg, 0x0);
 }
+
+apr_size_t tftp_str_ntoh (apr_pool_t *mp, char *buf, apr_size_t len)
+{
+  char *nbuf = apr_palloc (mp, len);
+  apr_size_t i, new_len = 0;
+  for (i = 0; i < len; i++) {
+    if (buf[i] == '\r' && buf[i + 1] == '\0') {
+      i++;
+    } else if (buf[i] == '\r' && buf[i + 1] == '\n') {
+      nbuf[new_len++] = '\n';
+      i++;
+    } else {
+      nbuf[new_len++] = buf[i];
+    }
+  }
+  apr_cpystrn(buf, nbuf, new_len + 1);
+  return new_len;
+}
+
+apr_size_t tftp_str_hton (apr_pool_t *mp, char *buf, apr_size_t len)
+{
+  char *nbuf = apr_palloc (mp, len);
+  apr_size_t i, new_len = 0;
+  for (i = 0; i < len; i++) {
+    if (buf[i] == '\r' && buf[i + 1] != '\n') {
+      nbuf[new_len++] = '\r';
+      nbuf[new_len++] = '\0';
+    } else if (buf[i] == '\n' && buf[i - 1] != '\r') {
+      nbuf[new_len++] = '\r';
+      nbuf[new_len++] = '\n';
+    } else {
+      nbuf[new_len++] = buf[i];
+    }
+  }
+  apr_cpystrn(buf, nbuf, new_len + 1);
+  return new_len;
+}
+

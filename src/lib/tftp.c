@@ -28,38 +28,15 @@
  */
 #include "tftp.h"
 
-/*! @def tftp_req_pack(buf, opcode, pack)
- * Create request packet as char array.
- * @param buf     Result buffer as char array
- * @param opcode  TFTP packet opcode. E_RRQ or E_WRQ.
- * @param pack    Packet structure pack_rq
- */
-#define tftp_req_pack(buf, opcode, pack) apr_snprintf ((buf),     \
-                DATA_SIZE + 4, "%c%c%.*s%c%.*s%c", 0x0, (opcode), \
-                (pack)->len_filename, (pack)->filename, 0x0,      \
-                (pack)->len_mode, (pack)->mode, 0x0 )
-
-/*! @def low_byte(num)
- * Get lower byte of short int
- * @param num   16 bit integer
- */
-#define low_byte(num) ( (num) >> 8 )
-
-/*! @def hi_byte(num)
- * Get higher byte of short int
- * @param num   16 bit integer
- */
-#define hi_byte(num)  ( (num) & 0x00ff )
-
 /**
  * Ragel Finit State Machine
  */
 
-#line 120 "src/lib/tftp.rl"
+#line 97 "src/lib/tftp.rl"
 
 
 
-#line 63 "src/lib/tftp.c"
+#line 40 "src/lib/tftp.c"
 static const char _tftp_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1, 
 	3, 1, 5, 1, 6, 1, 7, 2, 
@@ -597,7 +574,7 @@ static const int tftp_error = 0;
 static const int tftp_en_tftp = 1;
 
 
-#line 123 "src/lib/tftp.rl"
+#line 100 "src/lib/tftp.rl"
 
 tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
 {
@@ -611,14 +588,14 @@ tftp_pack* tftp_packet_read (char* packet, apr_size_t len, apr_pool_t *mp)
   pack->data = (union data*) apr_palloc (mp, sizeof(union data));
 
   
-#line 615 "src/lib/tftp.c"
+#line 592 "src/lib/tftp.c"
 	{
 	cs = tftp_start;
 	}
 
-#line 136 "src/lib/tftp.rl"
+#line 113 "src/lib/tftp.rl"
   
-#line 622 "src/lib/tftp.c"
+#line 599 "src/lib/tftp.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -692,7 +669,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 58 "src/lib/tftp.rl"
+#line 35 "src/lib/tftp.rl"
 	{
     pack->data->rq.len_filename = p - mark;
     pack->data->rq.filename = apr_pstrmemdup(mp, mark, pack->data->rq.len_filename);
@@ -700,7 +677,7 @@ _match:
   }
 	break;
 	case 1:
-#line 64 "src/lib/tftp.rl"
+#line 41 "src/lib/tftp.rl"
 	{
     pack->data->rq.len_mode = p - mark;
     pack->data->rq.mode = apr_pstrmemdup(mp, mark, pack->data->rq.len_mode);
@@ -714,7 +691,7 @@ _match:
   }
 	break;
 	case 2:
-#line 76 "src/lib/tftp.rl"
+#line 53 "src/lib/tftp.rl"
 	{
     unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
     unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
@@ -723,14 +700,14 @@ _match:
   }
 	break;
 	case 6:
-#line 112 "src/lib/tftp.rl"
+#line 89 "src/lib/tftp.rl"
 	{pack->opcode = E_RRQ;}
 	break;
 	case 7:
-#line 113 "src/lib/tftp.rl"
+#line 90 "src/lib/tftp.rl"
 	{pack->opcode = E_WRQ;}
 	break;
-#line 734 "src/lib/tftp.c"
+#line 711 "src/lib/tftp.c"
 		}
 	}
 
@@ -747,7 +724,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 2:
-#line 76 "src/lib/tftp.rl"
+#line 53 "src/lib/tftp.rl"
 	{
     unsigned char low = *mark & 0xff;       // get lower byte and make sure it is 1 byte
     unsigned char hi  = *(mark +1) & 0xff;  // get higher byte and make sure it is 1 byte
@@ -756,24 +733,24 @@ _again:
   }
 	break;
 	case 3:
-#line 83 "src/lib/tftp.rl"
+#line 60 "src/lib/tftp.rl"
 	{
     pack->opcode = E_DATA;
     apr_size_t len = p - mark;
     pack->data->data.block = block_num;
-    apr_cpystrn (pack->data->data.data, mark, len + 1);
     pack->data->data.length = len;
+    apr_cpystrn (pack->data->data.data, mark, len + 1);
   }
 	break;
 	case 4:
-#line 91 "src/lib/tftp.rl"
+#line 68 "src/lib/tftp.rl"
 	{
     pack->opcode = E_ACK;
     pack->data->ack.block = block_num;
   }
 	break;
 	case 5:
-#line 96 "src/lib/tftp.rl"
+#line 73 "src/lib/tftp.rl"
 	{
     pack->opcode = E_ERROR;
     pack->data->error.ercode = block_num;
@@ -781,7 +758,7 @@ _again:
     pack->data->error.msg = apr_pstrmemdup(mp, mark, pack->data->error.msg_len);
   }
 	break;
-#line 785 "src/lib/tftp.c"
+#line 762 "src/lib/tftp.c"
 		}
 	}
 	}
@@ -789,10 +766,11 @@ _again:
 	_out: {}
 	}
 
-#line 137 "src/lib/tftp.rl"
+#line 114 "src/lib/tftp.rl"
 
   if ( cs < tftp_first_final )
     return NULL;
+
   return pack;
 }
 
@@ -826,3 +804,41 @@ apr_size_t tftp_create_error (char *buf, struct pack_error *error)
     0x0, E_ERROR, 0x0, error->ercode, error->msg_len,
     error->msg, 0x0);
 }
+
+apr_size_t tftp_str_ntoh (apr_pool_t *mp, char *buf, apr_size_t len)
+{
+  char *nbuf = apr_palloc (mp, len);
+  apr_size_t i, new_len = 0;
+  for (i = 0; i < len; i++) {
+    if (buf[i] == '\r' && buf[i + 1] == '\0') {
+      i++;
+    } else if (buf[i] == '\r' && buf[i + 1] == '\n') {
+      nbuf[new_len++] = '\n';
+      i++;
+    } else {
+      nbuf[new_len++] = buf[i];
+    }
+  }
+  apr_cpystrn(buf, nbuf, new_len + 1);
+  return new_len;
+}
+
+apr_size_t tftp_str_hton (apr_pool_t *mp, char *buf, apr_size_t len)
+{
+  char *nbuf = apr_palloc (mp, len);
+  apr_size_t i, new_len = 0;
+  for (i = 0; i < len; i++) {
+    if (buf[i] == '\r' && buf[i + 1] != '\n') {
+      nbuf[new_len++] = '\r';
+      nbuf[new_len++] = '\0';
+    } else if (buf[i] == '\n' && buf[i - 1] != '\r') {
+      nbuf[new_len++] = '\r';
+      nbuf[new_len++] = '\n';
+    } else {
+      nbuf[new_len++] = buf[i];
+    }
+  }
+  apr_cpystrn(buf, nbuf, new_len + 1);
+  return new_len;
+}
+

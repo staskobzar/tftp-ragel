@@ -74,13 +74,13 @@ static void create_data_pack_test (void **state)
   apr_size_t len = 0;
   char *buf = apr_palloc(*state, DATA_SIZE + 4);
   tftp_pack *pack;
-  const char data[] = "The licenses for most software and other practical works are designed "
-                      "to take away your freedom to share and change the works.  By contrast, "
-                      "the GNU General Public License is intended to guarantee your freedom to "
-                      "share and change all versions of a program--to make sure it remains free "
-                      "software for all its users.  We, the Free Software Foundation, use the "
-                      "GNU General Public License for most of our software; it applies also to "
-                      "any other work released this way by its authors.  You can apply it to "
+  const char data[] = "The licenses for most software and other practical works are designed\n"
+                      "to take away your freedom to share and change the works.  By contrast,\n"
+                      "the GNU General Public License is intended to guarantee your freedom to\n"
+                      "share and change all versions of a program--to make sure it remains free\n"
+                      "software for all its users.  We, the Free Software Foundation, use the\n"
+                      "GNU General Public License for most of our software; it applies also to\n"
+                      "any other work released this way by its authors.  You can apply it to\n"
                       "your programs";
   struct pack_data pdata = {
     .block = 12345,
@@ -95,6 +95,41 @@ static void create_data_pack_test (void **state)
   assert_string_equal (pack->data->data.data, data);
   assert_int_equal (pack->data->data.block, 12345);
 }
+
+/* Test convert CR, NUL -> CR and CR, LF -> LF in tftp packet. */
+// ----------------------------------
+static void convert_str_ntoh_test (void **state)
+{
+  char *str_to_conv = "This is test \r\nstring\r\n to \nconvert";
+  char *str_to_test = "This is test \nstring\n to \nconvert";
+  apr_size_t len = strlen(str_to_conv);
+  apr_size_t new_len = strlen(str_to_test);
+  apr_size_t test_len = 0;
+
+  char *buf = apr_pstrmemdup(*state, str_to_conv, len);
+
+  test_len = tftp_str_ntoh (*state, buf, len);
+  assert_int_equal (test_len, new_len);
+  assert_string_equal (str_to_test, buf);
+}
+
+/* Test convert CR -> CR, NUL and LF -> CR, LF in tftp packet. */
+// ----------------------------------
+static void convert_str_hton_test (void **state)
+{
+  char *str_to_conv = "This is test \nstring\n to \nconvert";
+  char *str_to_test = "This is test \r\nstring\r\n to \r\nconvert";
+  apr_size_t len = strlen(str_to_conv);
+  apr_size_t new_len = strlen(str_to_test);
+  apr_size_t test_len = 0;
+
+  char *buf = apr_pstrmemdup(*state, str_to_conv, len);
+
+  test_len = tftp_str_hton (*state, buf, len);
+  assert_int_equal (test_len, new_len);
+  assert_string_equal (str_to_test, buf);
+}
+
 
 /* Test create ACK tftp packet. */
 // ----------------------------------
@@ -142,6 +177,8 @@ int main(void)
     cmocka_unit_test_setup_teardown (create_data_pack_test, setup, teardown),
     cmocka_unit_test_setup_teardown (create_ack_pack_test, setup, teardown),
     cmocka_unit_test_setup_teardown (create_error_pack_test, setup, teardown),
+    cmocka_unit_test_setup_teardown (convert_str_ntoh_test, setup, teardown),
+    cmocka_unit_test_setup_teardown (convert_str_hton_test, setup, teardown),
   };
 
   return cmocka_run_group_tests_name("tftpclient library tests", tests, NULL, NULL);
