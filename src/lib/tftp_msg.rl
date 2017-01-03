@@ -19,12 +19,13 @@
  */
 
 /**
- * @file tftp.c
- * @brief TFTP protocol library
+ * @file tftp_msg.c
+ * @brief TFTP protocol library.
+ * Message parsing and creating.
  *
  * @author Stas Kobzar <staskobzar@gmail.com>
  */
-#include "tftp.h"
+#include "tftp_msg.h"
 
 /**
  * Ragel Finit State Machine
@@ -132,7 +133,7 @@ apr_size_t tftp_create_data (char *buf, struct pack_data *data)
 {
   return apr_snprintf (buf, DATA_SIZE + 5, "%c%c%c%c%.*s",
     0x0, E_DATA, low_byte(data->block), hi_byte(data->block),
-    data->length, data->data
+    (int)data->length, data->data
   );
 }
 
@@ -145,7 +146,7 @@ apr_size_t tftp_create_ack (char *buf, int block)
 apr_size_t tftp_create_error (char *buf, struct pack_error *error)
 {
   return apr_snprintf (buf, DATA_SIZE, "%c%c%c%c%.*s%c",
-    0x0, E_ERROR, 0x0, error->ercode, error->msg_len,
+    0x0, E_ERROR, 0x0, error->ercode, (int)error->msg_len,
     error->msg, 0x0);
 }
 
@@ -154,10 +155,10 @@ apr_size_t tftp_str_ntoh (apr_pool_t *mp, char *buf, apr_size_t len)
   char *nbuf = apr_palloc (mp, len);
   apr_size_t i, new_len = 0;
   for (i = 0; i < len; i++) {
-    if (buf[i] == '\r' && buf[i + 1] == '\0') {
+    if (buf[i] == APR_ASCII_CR && buf[i + 1] == '\0') {
       i++;
-    } else if (buf[i] == '\r' && buf[i + 1] == '\n') {
-      nbuf[new_len++] = '\n';
+    } else if (buf[i] == APR_ASCII_CR && buf[i + 1] == APR_ASCII_LF) {
+      nbuf[new_len++] = APR_ASCII_LF;
       i++;
     } else {
       nbuf[new_len++] = buf[i];
@@ -172,12 +173,12 @@ apr_size_t tftp_str_hton (apr_pool_t *mp, char *buf, apr_size_t len)
   char *nbuf = apr_palloc (mp, len);
   apr_size_t i, new_len = 0;
   for (i = 0; i < len; i++) {
-    if (buf[i] == '\r' && buf[i + 1] != '\n') {
-      nbuf[new_len++] = '\r';
+    if (buf[i] == APR_ASCII_CR && buf[i + 1] != APR_ASCII_LF) {
+      nbuf[new_len++] = APR_ASCII_CR;
       nbuf[new_len++] = '\0';
-    } else if (buf[i] == '\n' && buf[i - 1] != '\r') {
-      nbuf[new_len++] = '\r';
-      nbuf[new_len++] = '\n';
+    } else if (buf[i] == APR_ASCII_LF && buf[i - 1] != APR_ASCII_CR) {
+      nbuf[new_len++] = APR_ASCII_CR;
+      nbuf[new_len++] = APR_ASCII_LF;
     } else {
       nbuf[new_len++] = buf[i];
     }

@@ -3,7 +3,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-#include "tftp.h"
+#include "tftp_msg.h"
 
 /*
  * Setup and teardown for create message tests.

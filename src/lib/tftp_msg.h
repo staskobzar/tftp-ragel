@@ -19,11 +19,14 @@
  */
 
 /**
- * @file tftp.h
+ * @file tftp_msg.h
  * @brief TFTP protocol library
  *
  * @author Stas Kobzar <staskobzar@gmail.com>
  */
+
+#ifndef __TFTP_MSG_H
+#define __TFTP_MSG_H
 
 #include <stdint.h>
 #include <apr_general.h>
@@ -37,6 +40,8 @@
 #define MODE_MAIL  "mail"       /*!< define mail mode */
 
 #define DATA_SIZE  512          /*!< TFTP data block size as defined in RFC1350 */
+
+#define BUF_SIZE   DATA_SIZE + 4 /*!< TFTP packet buffer size */
 
 /*! @def tftp_req_pack(buf, opcode, pack)
  * Create request packet as char array.
@@ -67,9 +72,16 @@
  */
 
 enum mode {
-  E_OCTET = 0x0a, /*!< octet mode */
+  E_OCTET,        /*!< octet mode */
   E_ASCII,        /*!< netascii mode */
   E_MAIL          /*!< mail mode */
+};
+
+/*!
+ * Mode to string.
+ */
+static char *mode_str[] = {
+  MODE_OCTET, MODE_ASCII, MODE_MAIL
 };
 
 /*!
@@ -83,6 +95,11 @@ enum opcodes {
   E_DATA  = 0x03, /*!< Data */
   E_ACK   = 0x04, /*!< Acknowledgment */
   E_ERROR = 0x05, /*!< Error */
+};
+
+/*! String representation of opcode. */
+static char *opcode_str[] = {
+  "UNDEFINED", "RRQ", "WRQ", "DATA", "ACK", "ERROR"
 };
 
 /*!
@@ -235,3 +252,4 @@ apr_size_t tftp_str_ntoh (apr_pool_t *mp, char *buf, apr_size_t len);
  */
 apr_size_t tftp_str_hton (apr_pool_t *mp, char *buf, apr_size_t len);
 
+#endif
