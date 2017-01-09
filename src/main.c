@@ -28,10 +28,9 @@
 #include "tftp_proto.h"
 #include "util.h"
 
-#include <apr_network_io.h>
-#include <apr_file_io.h>
-#include <stdio.h> // to del
-
+/**
+ * TFTPClient main proc.
+ */
 int main(int argc, const char *argv[])
 {
   apr_pool_t *mp;
@@ -39,26 +38,24 @@ int main(int argc, const char *argv[])
   apr_initialize();
   apr_pool_create(&mp, NULL);
 
-//----------------------------------------------------------------
-//----------------------------------------------------------------
+  struct tftp_params params;
 
-  struct tftp_params params = {
-    .host = "127.0.0.1",
-    .port = 69,
-    .action = PUT,
-    .mode = E_ASCII,
-    .local_file = "Makefile",
-    .remote_file = "bootstrap.sh",
-  };
-  if (tftp_proto_init (mp, &params) == APR_SUCCESS) {
-    printf("Initiated TFTP proto.\n");
-    while(tftp_proto_fsm());
-  } else {
-    printf("Failed to initiate tftp proto.\n");
+  if (parse_args (mp, &params, argc, argv) != APR_SUCCESS) {
+    printf("Run \"%s --help\" for options list.\n", argv[0]);
+    goto done;
   }
-//----------------------------------------------------------------
-//----------------------------------------------------------------
 
+  DBG("Init TFTP protocol machine.");
+  if (tftp_proto_init (mp, &params) != APR_SUCCESS) {
+    ERR("Failed to initiate tftp proto.");
+    goto done;
+  }
+
+  // running TFTP protocol finit state machine
+  DBG("Start TFTP Finit State Machine.");
+  while(tftp_proto_fsm());
+
+done:
   apr_pool_destroy(mp);
   apr_terminate();
   return 0;

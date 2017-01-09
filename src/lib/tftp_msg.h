@@ -29,7 +29,6 @@
 #define __TFTP_MSG_H
 
 #include <stdint.h>
-#include <apr_general.h>
 #include <apr_strings.h>
 
 #define MODE_OCTET "octet"      /*!< define octet mode */

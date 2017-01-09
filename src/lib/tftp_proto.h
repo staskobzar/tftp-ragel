@@ -35,62 +35,109 @@
 
 #include "tftp_msg.h"
 
+/*! Default TFTP port */
+#define TFTP_PORT 69
+
+/*! Boolean type. */
 typedef unsigned char bool;
 
-enum e_state {
-  END, INIT, RECV, SEND
-};
+/*! @enum e_state TFTP machine states. */
+enum e_state { END, INIT, RECV, SEND };
+
+/*! Machine state type. */
 typedef enum e_state state;
 
-static char *state_str[] = {
-  "END", "INIT", "RECV", "SEND"
-};
+/*!
+ * State strings representation.
+ */
+static char *state_str[] = { "END", "INIT", "RECV", "SEND" };
 
+/*! @enum file_action Action GET or PUT */
 enum file_action {GET, PUT};
 
+/*!
+ * TFTP Finit State Machine structure.
+ */
 struct tftp_machine {
-  unsigned int      tid; // transaction id, port of response
-  char              *remote_file;
-  state             state;
-  apr_file_t        *local_file;
-  apr_socket_t      *sock;
-  apr_sockaddr_t    *sockaddr;
-  uint16_t          block;
-  enum file_action  action;
-  enum opcodes      event;
-  apr_pool_t        *mp;
-  char              *buf;
-  enum mode         mode;
-  tftp_pack         *pack;
+  unsigned int      tid;          /*!< Transaction id, port of response. */
+  const char        *remote_file; /*!< Remote file name. */
+  apr_file_t        *local_file;  /*!< Local file descriptor. */
+  apr_socket_t      *sock;        /*!< Socket structure. */
+  apr_sockaddr_t    *sockaddr;    /*!< Socket address structure. */
+  uint16_t          block;        /*!< Packet block number. */
+  enum file_action  action;       /*!< File action GET or PUT. */
+  state             state;        /*!< Machine state. */
+  enum opcodes      event;        /*!< Machine event. */
+  apr_pool_t        *mp;          /*!< APR memory pool. */
+  char              *buf;         /*!< Packet exchange buffer. */
+  enum mode         mode;         /*!< Transaction mode: ascii or octet. */
+  tftp_pack         *pack;        /*!< TFTP packet structure (see tftp_msg.h) */
 };
 
+/**
+ * TFTP client command parameters.
+ */
 struct tftp_params {
-  char *remote_file;
-  char *local_file;
-  char *host;
-  unsigned int port;
-  bool verbose;
-  enum file_action action;
-  enum mode mode;
+  const char *remote_file;  /*!< Remote file name. */
+  const char *local_file;   /*!< Local file name. */
+  const char *host;         /*!< TFTP server host. */
+  unsigned int port;        /*!< TFTP server port. */
+  bool verbose;             /*!< Verbosity enable. */
+  enum file_action action;  /*!< File action PUT or GET. */
+  enum mode mode;           /*!< Transfer mode. */
 };
 
 /*!
  * Finit State Machine transition structure.
  */
 struct trans_table {
-  state   current_state;
-  enum    opcodes event;
-  state   (*action)(void);
+  state   current_state;    /*!< State */
+  enum    opcodes event;    /*!< Event */
+  state   (*action)(void);  /*!< Pointer to func to execute. */
 };
 
+/**
+ * Inititate TFTP protocol machine.
+ * @param mp      APR memory pool.
+ * @param params  Command paramters
+ * @return APR status
+ */
 apr_status_t tftp_proto_init (apr_pool_t *mp, struct tftp_params *params);
 
+/**
+ * Run TFTP Finit State Machine.
+ * @return Current State.
+ */
 state tftp_proto_fsm ();
 
+/**
+ * Create and send WRQ or RRQ packet.
+ * @return Current State.
+ */
 state tftp_proto_rq (void);
+
+/**
+ * Process ERROR packet.
+ * @return Current State.
+ */
 state tftp_proto_error (void);
+
+/**
+ * Create and send DATA packet.
+ * @return Current State.
+ */
 state tftp_proto_send_data (void);
+
+/**
+ * Receive DATA packet.
+ * @return Current State.
+ */
 state tftp_proto_recv_data (void);
+
+/**
+ * Process ACK packet.
+ * @return Current State.
+ */
 state tftp_proto_ack (void);
 
 #endif

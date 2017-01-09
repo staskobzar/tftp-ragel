@@ -1,0 +1,32 @@
+set tool tftpclient
+set test_name "Frontend test tftpclient application"
+
+global TFTPCLIENT
+
+# test verbose output against regex
+set testcases_verbose {
+  {"Print version"    "-V"        "tftpclient [0-9.]+ Copyright \\(C\\) 2017" }
+  {"Print version"    "--version" "tftpclient [0-9.]+ Copyright \\(C\\) 2017" }
+  {"Print help"       "-h"        "Usage: tftpclient \\[OPTION\\]"            }
+  {"Print help"       "--help"    "Usage: tftpclient \\[OPTION\\]"            }
+  {"Invalid port"     "-P"        "missing argument"                          }
+  {"Invalid port"     "-P asd"    "Invalid port value: asd"                   }
+  {"Invalid port"     "-P 0"      "Invalid port value: 0"                     }
+  {"Invalid port"     "-P 80000"  "Invalid port value: 80000"                 }
+  {"Invalid mode"     "-m qqq"    "Invalid mode: qqq"                         }
+  {"Missing host"     "-v"        "Missing TFTP server"                       }
+  {"Missing remote file" "-v 127.0.0.1" "Missing remote file"                 }
+}
+
+foreach pattern $testcases_verbose {
+  set msg    [lindex $pattern 0]
+  set argv   [lindex $pattern 1]
+  set output [lindex $pattern 2]
+  eval "spawn $TFTPCLIENT $argv"
+
+  expect {
+    -re $output { pass $msg }
+    default     { fail $msg }
+  }
+}
+

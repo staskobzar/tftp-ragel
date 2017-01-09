@@ -1,6 +1,6 @@
-#AUTOMAKE_OPTIONS=dejagnu
-#DEJATOOL = frontend
-#RUNTESTFLAGS=LUHN=$(top_builddir)/src/luhn
+AUTOMAKE_OPTIONS=dejagnu
+DEJATOOL = frontend
+RUNTESTFLAGS=TFTPCLIENT=$(top_builddir)/src/tftpclient
 
 if HAVE_CMOCKA
   TESTS = tftp_msg_read_test tftp_msg_create_test
