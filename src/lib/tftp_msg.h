@@ -134,7 +134,7 @@ struct pack_rq {
  */
 struct pack_data {
   uint16_t block;          /*!< block number 2 bytes */
-  unsigned char data[DATA_SIZE]; /*!< data field up to 512 bytes */
+  char data[DATA_SIZE]; /*!< data field up to 512 bytes */
   apr_size_t length;       /*!< data 2 bytes field length. When transfer, should be 512 bytes.
                                 If less then 512 bytes, then this is the last TFTP packet. */
 };

@@ -113,8 +113,8 @@ test/site.bak
 
 confesSfsP/
 src/tftpclient
-test/tftp_read_pack_test
-test/tftp_create_pack_test
+test/tftp_msg_create_test
+test/tftp_msg_read_test
 *.tar.gz
 Gemfile.lock
 doc/Doxyfile

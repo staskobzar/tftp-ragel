@@ -166,12 +166,18 @@ static void read_last_data_pack_test (void **state)
 
 /* Test read binary DATA tftp packet. */
 // ----------------------------------
+#include <stdio.h>
 static void read_bin_data_pack_test (void **state)
 {
+  int i = 0;
   tftp_pack *pack = tftp_packet_read(raw_bin_data, sizeof(raw_bin_data), *state);
   assert_int_equal (pack->opcode, E_DATA);
   assert_int_equal (pack->data->data.block, 20751);
   assert_int_equal (pack->data->data.length, 512);
+  // tests
+  for (i; i< 512; i++) {
+    assert_int_equal (raw_bin_data[i + 4], pack->data->data.data[i]);
+  }
 }
 
 /* Test read ACK tftp packet. */

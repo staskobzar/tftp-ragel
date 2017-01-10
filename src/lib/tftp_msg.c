@@ -740,7 +740,7 @@ _again:
     apr_size_t len = p - mark;
     pack->data->data.block = block_num;
     pack->data->data.length = len;
-    apr_cpystrn (pack->data->data.data, mark, len + 1);
+    memcpy (pack->data->data.data, mark, len + 1);
   }
 	break;
 	case 4:
@@ -787,10 +787,13 @@ apr_size_t tftp_create_wrq (char *buf, struct pack_rq *rq)
 
 apr_size_t tftp_create_data (char *buf, struct pack_data *data)
 {
-  return apr_snprintf (buf, DATA_SIZE + 5, "%c%c%c%c%.*s",
-    0x0, E_DATA, low_byte(data->block), hi_byte(data->block),
-    (int)data->length, data->data
-  );
+  int len = apr_snprintf (buf, 5, "%c%c%c%c",
+    0x0, E_DATA, low_byte(data->block), hi_byte(data->block));
+
+  for (; len < data->length + 4; len++) {
+    buf[len] = data->data[len - 4];
+  }
+  return len;
 }
 
 apr_size_t tftp_create_ack (char *buf, int block)

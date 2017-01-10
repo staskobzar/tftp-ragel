@@ -54,6 +54,9 @@ apr_status_t tftp_proto_init (apr_pool_t *mp, struct tftp_params *params)
   machine.state = INIT;
   machine.tid = 0;      // init transaction id
   machine.action = params->action;
+  machine.mode = params->mode;
+  DBG("Mode is (%d) %s", machine.mode, mode_str[machine.mode]);
+  machine.mp = mp;
 
   rv = apr_sockaddr_info_get(&machine.sockaddr, params->host, APR_INET, params->port, 0, mp);
   if (rv != APR_SUCCESS) {
@@ -74,6 +77,11 @@ apr_status_t tftp_proto_init (apr_pool_t *mp, struct tftp_params *params)
     file_open_flag  = APR_FOPEN_READ;
     machine.event   = E_WRQ;
   }
+  if (machine.mode == E_OCTET) {
+    DBG("Add binary flag to file open function.");
+    file_open_flag |= APR_FOPEN_BINARY;
+  }
+
   DBG("Machine event: %s", opcode_str[machine.event]);
 
   rv = apr_file_open (&machine.local_file, params->local_file,
@@ -85,9 +93,6 @@ apr_status_t tftp_proto_init (apr_pool_t *mp, struct tftp_params *params)
   DBG("Opened file %s", params->local_file);
   machine.remote_file = params->remote_file;
 
-  machine.mode = params->mode;
-
-  machine.mp = mp;
   machine.buf = apr_palloc(mp, BUF_SIZE);
   DBG("Allocated TFTP message exchange buffer with size %d bytes.", BUF_SIZE);
 
