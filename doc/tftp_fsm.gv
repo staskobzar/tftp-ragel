@@ -1,0 +1,13 @@
+digraph tftp_fsm {
+  rankdir=LR; // Left to Right, instead of Top to Bottom
+  size = "8,5"
+  node [shape = doublecircle]; END;
+  node [shape = circle];
+  INIT -> RECV [ label = "RRQ" ];
+  INIT -> SEND [ label = "RWQ" ];
+  RECV  -> SEND [ label = "DATA" ];
+  RECV  -> END  [ label = "ERROR" ];
+  SEND  -> END  [ label = "DATA<last>" ];
+  SEND  -> RECV [ label = "ACK" ];
+  SEND  -> END  [ label = "ERROR" ];
+}

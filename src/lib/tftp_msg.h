@@ -133,9 +133,9 @@ struct pack_rq {
  * TFTP DATA packet structure without opcode.
  */
 struct pack_data {
-  uint16_t block;          /*!< block number 2 bytes */
+  uint16_t block;       /*!< block number 2 bytes */
   char data[DATA_SIZE]; /*!< data field up to 512 bytes */
-  apr_size_t length;       /*!< data 2 bytes field length. When transfer, should be 512 bytes.
+  apr_size_t length;    /*!< data 2 bytes field length. When transfer, should be 512 bytes.
                                 If less then 512 bytes, then this is the last TFTP packet. */
 };
 
@@ -151,7 +151,7 @@ struct pack_ack {
  * Structure: code message 0x00
  */
 struct pack_error {
-  enum ercode ercode;      /*!< error code (2 bytes) */
+  enum ercode ercode;   /*!< error code (2 bytes) */
   char *msg;            /*!< error message */
   unsigned int msg_len; /*!< error message length */
 };
